@@ -2,8 +2,6 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler,
                           Filters ,ConversationHandler,RegexHandler)
 import apiai, json
 import sqlite3
-updater = Updater(token='token:token')
-dispatcher = updater.dispatcher
 import telegram as tg
 import pandas as pd
 
@@ -22,6 +20,10 @@ dictCantidad = {"<5000":"Me gusta empezar con algo moderado. Dime, ¿Necesitarí
               ">20000": "Uuuf, veo que alguien ha trabajado duro y ahora está recogiendo los frutos.Dime, ¿Necesitarías una oficina para las gestiones?"}
 
 def startCommand(bot, update,user_data):
+	"""
+	Función start. Se llama cuando el usuario introduce /start en el bot.
+	Esta función pide la edad del usuario y guarda el id de usuario(único) en un DataFrame.
+	"""
     df.set_value(update.message.chat_id, 'id', update.message.chat_id)
     reply_keyboard = [['18-30', '30-60'],
                   ['>60']]
@@ -32,6 +34,11 @@ def startCommand(bot, update,user_data):
     return CHOOSING
 
 def riesgo_choice(bot, update,user_data):
+	"""
+	Función Riesgo. Segunda etapa del flujo.
+	Esta funcion recibe la edad del usuario y la almacena.
+	Además, pide el nivel de riesgo deseado.
+	"""
     df.set_value(update.message.chat_id,
                  'edad', update.message.text)
     respuesta = dictEdad[update.message.text]
@@ -44,6 +51,11 @@ def riesgo_choice(bot, update,user_data):
     return CANTIDAD
 
 def cantidad_choice(bot, update,user_data):
+	"""
+	Función Cantidad. Tercera etapa de flujo. 
+	Esta función recibe el nivel de riesgo del usuario y lo almacena.
+	Además, pide la cantidad a invertir.
+	"""
     df.set_value(update.message.chat_id,
                  'riesgo', update.message.text)
     respuesta = dictRiesgo[update.message.text]
@@ -55,6 +67,11 @@ def cantidad_choice(bot, update,user_data):
                      reply_markup=markup)
     return OFICINA
 def oficina_choice(bot, update,user_data):
+	"""
+	Función oficina. Cuarta etapa del flujo.
+	Esta función recibe la cantidad a invertir y la almacena.
+	Además, da la opción de tener oficina.
+	"""
     df.set_value(update.message.chat_id,
                  'cantidad', update.message.text)
     respuesta = dictCantidad[update.message.text]
@@ -66,6 +83,11 @@ def oficina_choice(bot, update,user_data):
     return FIN
 
 def final_choice(bot, update,user_data):
+	"""
+	Función final. Final del flujo.
+	Esta función alamacena la elección de oficina y
+	responde con el mejor producto según las respuestas del usuario.
+	"""
     df.set_value(update.message.chat_id,
                  'oficina', update.message.text)
     respuesta=str(df.iloc[0,0])
@@ -79,24 +101,28 @@ def done(bot, update, user_data):
     return ConversationHandler.END
 
 def textMessage (bot, update):
-    cnx = sqlite3.connect("Conversaciones.db")
+	"""
+	Función texto.
+	Esta función tiene como objetivo conversar con el usuario.
+	Utilizamos DialogFlow como agente.
+	Guardamos todas las conversaciones en una base de datos.
+	"""
+    cnx = sqlite3.connect("Conversaciones.db") # Conectamos a la base de datos
     cursor = cnx.cursor()
-    request = apiai.ApiAI ('TOKENDF').text_request() # Token API to Dialogflow
-    request.lang = 'es' # In which language will the request be sent
-    request.session_id = 'small-talk-63ecd' # ID Sessions of the dialog (you need to learn the bot afterwards)
-    request.query = update.message.text # We send a request to the AI with a message from the user
+    request = apiai.ApiAI ('TOKENDF').text_request() # Token para la API de DialogFlow
+    request.lang = 'es' # Lenguaje del mensaje a enviar
+    request.session_id = 'small-talk-63ecd' # ID de la sesión.
+    request.query = update.message.text # Mandamos una consulta a la IA con el mensaje del usuario
     responseJson = json.loads(request.getresponse().read().decode('utf-8'))
-    response = responseJson['result']['fulfillment']['speech'] # We parse JSON and pull out the answer
-    #meter timestamp,update.message.text,response
+    response = responseJson['result']['fulfillment']['speech'] # Parseamos el JSON para obtener la respuesta del usuario
     msgusuario=update.message.text
     numero=str(update.message.chat_id)
     cursor.execute("INSERT INTO chats2 (id,usuario,bot) VALUES ('"+numero+"','"+msgusuario+"', '"+response+"')")
     cnx.commit()
-# If there is an answer from the bot - we send it to the user, if not - the bot did not understand it
     if response:
         bot.send_message(chat_id = update.message.chat_id, text = response)
     else:
-        bot.send_message(chat_id = update.message.chat_id, text = 'I do not quite understand!')
+        bot.send_message(chat_id = update.message.chat_id, text = 'Lo siento, no te he entendido. Recuerda que estoy aprendiendo.')
 
     
 conv_handler = ConversationHandler(
@@ -124,7 +150,8 @@ conv_handler = ConversationHandler(
         fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
     )  
      
-    
+updater = Updater(token='token:token')
+dispatcher = updater.dispatcher
 text_message_handler = MessageHandler(Filters.text,textMessage)
 dispatcher.add_handler(conv_handler)
 dispatcher.add_handler(text_message_handler)
