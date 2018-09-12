@@ -5,10 +5,14 @@ Credibot tiene dos funciones principales:
 * Tener conversaciones en lenguaje natural 
 * Ofrecerte el mejor producto financiero según tus caracteristicas
 
-# Requerimentos
+CrediBot está desarrollado en Python. El usuario puede contactar a CrediBot utilizando la aplicación de Telegram en cualquiera de sus dispositivos. CrediBot está conectado a la Bot API de Telegram por lo que recibirá cualquier mensaje emitido por el usuario.
+
+# Requerimentos ⚙️
 * pandas
 * sqlite
 * python-telegram-bot
+* token DialogFlow
+* token Telegram
 
-# Icono utilizado para CrediBot
+# Icono utilizado para CrediBot 🤖
 <div>Icons made by <a href="http://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
