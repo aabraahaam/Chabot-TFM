@@ -1,6 +1,7 @@
 # CrediBot 🤖
 
 Credibot es un chatbot creado como trabajo fin de máster pra el máster en Data Science de CUNEF.
+
 Credibot tiene dos funciones principales:
 * Tener conversaciones en lenguaje natural 
 * Ofrecerte el mejor producto financiero según tus caracteristicas
