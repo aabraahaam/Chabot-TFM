@@ -7,6 +7,8 @@ Credibot tiene dos funciones principales:
 
 CrediBot está desarrollado en Python. El usuario puede contactar a CrediBot utilizando la aplicación de Telegram en cualquiera de sus dispositivos. CrediBot está conectado a la Bot API de Telegram por lo que recibirá cualquier mensaje emitido por el usuario.
 
+El flujo básico de CrediBot es el siguiente:
+
 <img src="https://github.com/aabraahaam/Chabot-TFM/blob/master/flujo.png" alt="Flujo de CrediBot" width="80%">
 
 # Requerimentos ⚙️
