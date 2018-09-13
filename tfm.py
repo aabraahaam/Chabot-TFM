@@ -2,11 +2,14 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler,
                           Filters ,ConversationHandler,RegexHandler)
 import apiai, json
 import sqlite3
+updater = Updater(token='552572462:AAGk1hi3287frsdPJ24A-I07rDREm6FD9PY')
+print("Connection to Telegram established; starting bot.")
+dispatcher = updater.dispatcher
 import telegram as tg
 import pandas as pd
 
 CHOOSING, CANTIDAD, OFICINA, FIN = range(4)
-
+data = pd.read_csv("C:/Users/prueba/Downloads/Telegram Desktop/Productos.csv", sep= ";")
 columnas = ['id','edad','riesgo','cantidad','oficina']
 df=pd.DataFrame(columns=columnas)
 dictEdad = {"18-30":"¡Vaya jovencito! Ahora dime qué riesgo estás dispuesto a tomar.",
@@ -17,16 +20,12 @@ dictRiesgo = {"Alto":"¡Vaya, veo que te va la marcha! Ahora dime qué cantidad 
               "Bajo": "A mí también me gusta la tranquilidad. Ahora dime qué cantidad te gustaría invertir."}
 dictCantidad = {"<5000":"Me gusta empezar con algo moderado. Dime, ¿Necesitarías una oficina para las gestiones?",
               "5000-20000":"Vaya, parece que quieres tomárte esto en serio. Dime, ¿Necesitarías una oficina para las gestiones?",
-              ">20000": "Uuuf, veo que alguien ha trabajado duro y ahora está recogiendo los frutos.Dime, ¿Necesitarías una oficina para las gestiones?"}
+              ">20000": "Uuuf, veo que alguien ha trabajado duro y ahora está recogiendo los frutos. Dime, ¿Necesitarías una oficina para las gestiones?"}
 
 def startCommand(bot, update,user_data):
-	"""
-	Función start. Se llama cuando el usuario introduce /start en el bot.
-	Esta función pide la edad del usuario y guarda el id de usuario(único) en un DataFrame.
-	"""
     df.set_value(update.message.chat_id, 'id', update.message.chat_id)
     reply_keyboard = [['18-30', '30-60'],
-                  ['>60']]
+                      ['>60']]
     markup = tg.ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
     bot.send_message(chat_id=update.message.chat_id,
                      text="Tenemos que empezar por saber tu edad",
@@ -34,16 +33,11 @@ def startCommand(bot, update,user_data):
     return CHOOSING
 
 def riesgo_choice(bot, update,user_data):
-	"""
-	Función Riesgo. Segunda etapa del flujo.
-	Esta funcion recibe la edad del usuario y la almacena.
-	Además, pide el nivel de riesgo deseado.
-	"""
     df.set_value(update.message.chat_id,
                  'edad', update.message.text)
     respuesta = dictEdad[update.message.text]
     reply_keyboard = [['Alto', 'Medio'],
-                  ['Bajo']]
+                      ['Bajo']]
     markup = tg.ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
     bot.send_message(chat_id=update.message.chat_id,
                      text=respuesta,
@@ -51,27 +45,17 @@ def riesgo_choice(bot, update,user_data):
     return CANTIDAD
 
 def cantidad_choice(bot, update,user_data):
-	"""
-	Función Cantidad. Tercera etapa de flujo. 
-	Esta función recibe el nivel de riesgo del usuario y lo almacena.
-	Además, pide la cantidad a invertir.
-	"""
     df.set_value(update.message.chat_id,
                  'riesgo', update.message.text)
     respuesta = dictRiesgo[update.message.text]
     reply_keyboard = [['<5000', '5000-20000'],
-                  ['>20000']]
+                      ['>20000']]
     markup = tg.ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
     bot.send_message(chat_id=update.message.chat_id,
                      text=respuesta,
                      reply_markup=markup)
     return OFICINA
 def oficina_choice(bot, update,user_data):
-	"""
-	Función oficina. Cuarta etapa del flujo.
-	Esta función recibe la cantidad a invertir y la almacena.
-	Además, da la opción de tener oficina.
-	"""
     df.set_value(update.message.chat_id,
                  'cantidad', update.message.text)
     respuesta = dictCantidad[update.message.text]
@@ -80,20 +64,22 @@ def oficina_choice(bot, update,user_data):
     bot.send_message(chat_id=update.message.chat_id,
                      text=respuesta,
                      reply_markup=markup)
-    return FIN
+    return final_choice
 
 def final_choice(bot, update,user_data):
-	"""
-	Función final. Final del flujo.
-	Esta función alamacena la elección de oficina y
-	responde con el mejor producto según las respuestas del usuario.
-	"""
     df.set_value(update.message.chat_id,
                  'oficina', update.message.text)
-    respuesta=str(df.iloc[0,0])
+    edad = df.query("id == "+str(update.message.chat_id)+"").iloc[0,1]
+    riesgo = df.query("id == "+str(update.message.chat_id)+"").iloc[0,2]
+    cantidad = df.query("id == "+str(update.message.chat_id)+"").iloc[0,3]
+    oficina = df.query("id == "+str(update.message.chat_id)+"").iloc[0,4]
+    respuesta = data.query("EDAD == '"+str(edad)+"' & RIESGO == '"+
+                           str(riesgo)+"' & OFICINA == '"+str(oficina)+
+                           "' & CANTIDAD == '"+str(cantidad)+"'").iloc[0,0]
+    
+    respuesta = "Hemos consultado la base de datos y el producto que mejor se adapta a sus necesidades es el " + str(respuesta)
     bot.send_message(chat_id=update.message.chat_id,
-                     text=respuesta,
-                     reply_markup=markup)
+                     text=respuesta)
     return ConversationHandler.END
     
 def done(bot, update, user_data):
@@ -101,28 +87,24 @@ def done(bot, update, user_data):
     return ConversationHandler.END
 
 def textMessage (bot, update):
-	"""
-	Función texto.
-	Esta función tiene como objetivo conversar con el usuario.
-	Utilizamos DialogFlow como agente.
-	Guardamos todas las conversaciones en una base de datos.
-	"""
-    cnx = sqlite3.connect("Conversaciones.db") # Conectamos a la base de datos
+    cnx = sqlite3.connect("Conversaciones.db")
     cursor = cnx.cursor()
-    request = apiai.ApiAI ('TOKENDF').text_request() # Token para la API de DialogFlow
-    request.lang = 'es' # Lenguaje del mensaje a enviar
-    request.session_id = 'small-talk-63ecd' # ID de la sesión.
-    request.query = update.message.text # Mandamos una consulta a la IA con el mensaje del usuario
+    request = apiai.ApiAI ('c9a6cabba708400dabfbad488cabee76').text_request() # Token API to Dialogflow
+    request.lang = 'es' # In which language will the request be sent
+    request.session_id = 'small-talk-63ecd' # ID Sessions of the dialog (you need to learn the bot afterwards)
+    request.query = update.message.text # We send a request to the AI with a message from the user
     responseJson = json.loads(request.getresponse().read().decode('utf-8'))
-    response = responseJson['result']['fulfillment']['speech'] # Parseamos el JSON para obtener la respuesta del usuario
+    response = responseJson['result']['fulfillment']['speech'] # We parse JSON and pull out the answer
+    #meter timestamp,update.message.text,response
     msgusuario=update.message.text
     numero=str(update.message.chat_id)
     cursor.execute("INSERT INTO chats2 (id,usuario,bot) VALUES ('"+numero+"','"+msgusuario+"', '"+response+"')")
     cnx.commit()
+# If there is an answer from the bot - we send it to the user, if not - the bot did not understand it
     if response:
         bot.send_message(chat_id = update.message.chat_id, text = response)
     else:
-        bot.send_message(chat_id = update.message.chat_id, text = 'Lo siento, no te he entendido. Recuerda que estoy aprendiendo.')
+        bot.send_message(chat_id = update.message.chat_id, text = 'No te entiendo, recuerda que estoy aprendiendo')
 
     
 conv_handler = ConversationHandler(
@@ -139,22 +121,16 @@ conv_handler = ConversationHandler(
             OFICINA: [MessageHandler(Filters.text,
                                     oficina_choice,
                                     pass_user_data=True)
-                    ],
-            FIN: [MessageHandler(Filters.text,
-                                    final_choice,
-                                    pass_user_data=True)
                     ]
 
         },
 
-        fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
+        fallbacks=[RegexHandler('^(Sí|No|)$', final_choice, pass_user_data=True)]
     )  
-     
-updater = Updater(token='token:token')
-dispatcher = updater.dispatcher
-text_message_handler = MessageHandler(Filters.text,textMessage)
+
+text_message_handler = MessageHandler(Filters.text,textMessage)    
 dispatcher.add_handler(conv_handler)
 dispatcher.add_handler(text_message_handler)
 updater.start_polling(clean=True)
-print('A toda madre')
+print('Ejecutando')
 updater.idle()
