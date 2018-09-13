@@ -2,7 +2,7 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler,
                           Filters ,ConversationHandler,RegexHandler)
 import apiai, json
 import sqlite3
-updater = Updater(token='552572462:AAGk1hi3287frsdPJ24A-I07rDREm6FD9PY')
+updater = Updater(token='')
 print("Connection to Telegram established; starting bot.")
 dispatcher = updater.dispatcher
 import telegram as tg
@@ -89,7 +89,7 @@ def done(bot, update, user_data):
 def textMessage (bot, update):
     cnx = sqlite3.connect("Conversaciones.db")
     cursor = cnx.cursor()
-    request = apiai.ApiAI ('c9a6cabba708400dabfbad488cabee76').text_request() # Token API to Dialogflow
+    request = apiai.ApiAI ('').text_request() # Token API to Dialogflow
     request.lang = 'es' # In which language will the request be sent
     request.session_id = 'small-talk-63ecd' # ID Sessions of the dialog (you need to learn the bot afterwards)
     request.query = update.message.text # We send a request to the AI with a message from the user
